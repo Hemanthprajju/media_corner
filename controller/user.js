@@ -5,12 +5,6 @@ const userModel = require('../model/user');
 const signUp = async (req) => {
     const { firstName, lastName, role, email, password, address, city, state, zipCode } = req.body;
 
-    if (!email || !password) {
-        const error = new Error('Email and password are required');
-        error.statusCode = 400;
-        throw error;
-    }
-
     const userBody = new userModel({
         firstName,
         lastName,
@@ -34,6 +28,33 @@ const signUp = async (req) => {
     };
 };
 
+const signIn = async (req) => {
+    const { email, password } = req.body;
 
+    const user = await userModel
+        .findOne({ email: email.toLowerCase().trim() })
+        .select('+password');
 
-module.exports = { signUp };
+    if (!user || user.password !== md5(password)) {
+        const error = new Error('Invalid email or password');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    const token = jwt.sign(
+        { id: user._id, email: user.email, role: user.role },
+        process.env.JWT_SECRET || 'default_secret_change_me',
+        { expiresIn: '7d' }
+    );
+
+    const userData = user.toObject();
+    delete userData.password;
+
+    return {
+        message: 'Sign in successful',
+        token,
+        data: userData
+    };
+};
+
+module.exports = { signUp, signIn };
