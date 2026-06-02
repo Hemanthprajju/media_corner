@@ -14,5 +14,4 @@ const handleRequest = (handler) => (req, res) => {
 };
 
 router.post('/signUp', handleRequest(userController.signUp));
-
 module.exports = router;
